@@ -401,10 +401,16 @@ def submit_disclosure_form():
     else:
         data_dict["B1N"] = "Yes"
 
-    if is_in_arrears:
-        data_dict["B2Y"] = "Yes"
+    # Conditional logic for Arrears based on Ownership
+    if is_owner:
+        if is_in_arrears:
+            data_dict["B2Y"] = "Yes"
+        else:
+            data_dict["B2N"] = "Yes"
     else:
-        data_dict["B2N"] = "Yes"
+        # Not owner, leave arrears checkboxes empty
+        data_dict["B2Y"] = ""
+        data_dict["B2N"] = ""
 
     if is_occupant:
         data_dict["B3Y"] = "Yes"
