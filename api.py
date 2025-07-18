@@ -17,7 +17,8 @@ CORS(app)  # Allow cross-origin requests from frontend
 load_dotenv()  # Load environment variables from .env file
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-
+from_email = os.getenv("EMAIL_FROM")
+to_email = os.getenv("EMAIL_TO")
 
 # Prints the form values 
 @app.route('/api/submit-form', methods=['POST'])
@@ -494,7 +495,7 @@ def send_email():
         attachments.append(
             Attachment(
                 FileContent(disclosure_encoded),
-                FileName("DisclosureForm.pdf"),
+                FileName(f"{name.replace(' ', '')}-DisclosureForm.pdf"),
                 FileType("application/pdf"),
                 Disposition("attachment"),
             )
@@ -516,8 +517,8 @@ def send_email():
 
         # Create email
         message = Mail(
-            from_email='mark@formfetch.ca',
-            to_emails='tim@ct-quality.com',
+            from_email=from_email,
+            to_emails=to_email,
             subject=f'Disclosure Form Submission from {name}',
             plain_text_content='Please find attached the completed disclosure form and documents.',
         )
