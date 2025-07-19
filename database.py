@@ -6,7 +6,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS disclosure_links (
             id TEXT PRIMARY KEY,
-            to TEXT NOT NULL,
+            "to" TEXT NOT NULL,
             deadline TEXT NOT NULL
         )
     """)
