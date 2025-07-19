@@ -3,7 +3,6 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from fillpdf import fillpdfs
 import os
-from datetime import datetime
 import pytz
 from sendgrid import SendGridAPIClient
 import base64
@@ -12,9 +11,12 @@ from dotenv import load_dotenv
 import os
 import uuid
 from database import init_db, insert_link, get_link
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 init_db()
+
+start_time = datetime.utcnow()
 
 CORS(app)  # Allow cross-origin requests from frontend
 
@@ -574,6 +576,15 @@ def get_disclosure_data():
 @app.route("/health")
 def health():
     return "OK", 200
+
+@app.route("/uptime")
+def get_uptime():
+    now = datetime.utcnow()
+    uptime = now - start_time
+    return jsonify({
+        "uptime_seconds": int(uptime.total_seconds()),
+        "uptime": str(timedelta(seconds=int(uptime.total_seconds())))
+    }), 200
 
 
 if __name__ == '__main__':
