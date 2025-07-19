@@ -10,8 +10,12 @@ import base64
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 from dotenv import load_dotenv
 import os
+import uuid
+from database import init_db, insert_link, get_link
 
 app = Flask(__name__)
+init_db()
+
 CORS(app)  # Allow cross-origin requests from frontend
 
 load_dotenv()  # Load environment variables from .env file
@@ -543,7 +547,30 @@ def send_email():
         print("❌ Error sending email:", str(e))
         return jsonify({"error": str(e)}), 500
     
-    
+
+
+#Url generation
+@app.route("/api/generateLink", methods=["POST"])
+def generate_link():
+    data = request.json
+    to = data.get("to")
+    deadline = data.get("deadline")
+    if not to or not deadline:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    link_id = str(uuid.uuid4())[:8]  # Shorten to 8 chars
+    insert_link(link_id, to, deadline)
+    return jsonify({"id": link_id})
+
+@app.route("/api/disclosureData", methods=["GET"])
+def get_disclosure_data():
+    id = request.args.get("id")
+    data = get_link(id)
+    if not data:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(data)
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))  # Render sets the PORT environment variable
     app.run(host='0.0.0.0', port=port)
