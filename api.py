@@ -570,6 +570,11 @@ def get_disclosure_data():
         return jsonify({"error": "Not found"}), 404
     return jsonify(data)
 
+#ping
+@app.route("/health")
+def health():
+    return "OK", 200
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))  # Render sets the PORT environment variable
