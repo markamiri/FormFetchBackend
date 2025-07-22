@@ -19,7 +19,7 @@ init_db()
 
 start_time = datetime.utcnow()
 
-CORS(app)  # Allow cross-origin requests from frontend
+CORS(app, origins=["https://www.formfetch.ca"])
 
 load_dotenv()  # Load environment variables from .env file
 
