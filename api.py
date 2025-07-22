@@ -563,10 +563,11 @@ def generate_link():
     link_id = str(uuid.uuid4())[:8]  # Shorten to 8 chars
     insert_link(link_id, to, deadline)
 
-    print("generateLink has been called")
-    print(to)
-    print(deadline)
-    print(link_id)
+    print("/api/generateLink Called ✔️ ")
+    print(f"To: {to}")
+    print(f"Deadline: {deadline}")
+    print(f"Link ID: {link_id}")
+
     return jsonify({"id": link_id})
 
 @app.route("/api/disclosureData", methods=["GET"])
@@ -575,6 +576,9 @@ def get_disclosure_data():
     data = get_link(id)
     if not data:
         return jsonify({"error": "Not found"}), 404
+    
+    print("/api/disclosureData Called ✔️")
+    print(f"Data: {data}")
     return jsonify(data)
 
 #ping
