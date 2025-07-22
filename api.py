@@ -12,7 +12,7 @@ import os
 import uuid
 from database import init_db, insert_link, get_link
 from datetime import datetime, timedelta
-
+import json
 app = Flask(__name__)
 init_db()
 
@@ -402,6 +402,10 @@ def submit_disclosure_form():
     to = data["to"]
     data_dict = {}
 
+    print("\n📬 Disclosure Form Submitted")
+    print("📝 Data:", json.dumps(data, indent=2))  # Pretty print the full payload
+
+
     if is_owner:
         data_dict["B1Y"] = "Yes"
     else:
@@ -502,6 +506,7 @@ def send_email():
             disclosure_encoded = base64.b64encode(f.read()).decode()
 
         attachments = []
+        disclosure_filename = f"{name.replace(' ', '')}-DisclosureForm.pdf"
 
         # ✅ Add filled disclosure form
         attachments.append(
@@ -512,6 +517,9 @@ def send_email():
                 Disposition("attachment"),
             )
         )
+
+        print(f"✔️ Attached: {disclosure_filename}")
+
 
         # ✅ Handle uploaded supporting files
         if "files" in request.files:
@@ -526,6 +534,8 @@ def send_email():
                         Disposition("attachment")
                     )
                 )
+                print(f"✔️ Attached: {file.filename}")  # 📎 Log each uploaded file
+
 
         # Create email
         message = Mail(
