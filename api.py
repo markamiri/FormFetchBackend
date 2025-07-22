@@ -12,6 +12,7 @@ import os
 import uuid
 from database import init_db, insert_link, get_link
 from datetime import datetime, timedelta
+import json
 
 app = Flask(__name__)
 init_db()
@@ -390,6 +391,13 @@ def get_filled_pdf():
 def submit_disclosure_form():
     data = request.json  # This is your `completeFormData` object
 
+    # ✅ Log timestamp and full data for audit trail
+    eastern = pytz.timezone("US/Eastern")
+    now = datetime.now(eastern)
+    timestamp = now.strftime("%Y-%m-%d %I:%M:%S %p %Z")
+    print("📥 Form submitted at:", timestamp)
+    print("📄 Submitted data:", json.dumps(data, indent=2))  # Pretty print the JSON
+
     name = data["name"]
     address = data["address"]
     is_owner = data["isOwner"]
@@ -487,7 +495,6 @@ def get_day_with_suffix(day):
 
 
 #submit email 
-
 @app.route('/api/send-email', methods=['POST'])
 def send_email():
     try:
@@ -504,14 +511,17 @@ def send_email():
         attachments = []
 
         # ✅ Add filled disclosure form
+        disclosure_filename = f"{name.replace(' ', '')}-DisclosureForm.pdf"
         attachments.append(
             Attachment(
                 FileContent(disclosure_encoded),
-                FileName(f"{name.replace(' ', '')}-DisclosureForm.pdf"),
+                FileName(disclosure_filename),
                 FileType("application/pdf"),
                 Disposition("attachment"),
             )
         )
+
+        print(f"[{datetime.now()}] 📄 Disclosure form attached: {disclosure_filename}")
 
         # ✅ Handle uploaded supporting files
         if "files" in request.files:
@@ -526,6 +536,7 @@ def send_email():
                         Disposition("attachment")
                     )
                 )
+                print(f"[{datetime.now()}] 📎 Supporting file attached: {file.filename}")
 
         # Create email
         message = Mail(
@@ -533,7 +544,6 @@ def send_email():
             to_emails=to_email,
             subject=f'Disclosure Form Submission from {name}',
             plain_text_content=f'Please find attached the completed disclosure form and supporting documents from {name}',
-            
         )
 
         # ✅ Attach all files
@@ -542,34 +552,41 @@ def send_email():
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
 
-        print("✅ Email sent:", response.status_code)
+        print(f"[{datetime.now()}] ✅ Email sent to {to_email} with {len(attachments)} attachment(s). Status: {response.status_code}")
         return jsonify({"message": "Email sent successfully!"}), 200
 
     except Exception as e:
-        print("❌ Error sending email:", str(e))
+        print(f"[{datetime.now()}] ❌ Error sending email: {str(e)}")
         return jsonify({"error": str(e)}), 500
-    
-
 
 #Url generation
-@app.route("/api/generateLink", methods=["POST"])
 def generate_link():
     data = request.json
     to = data.get("to")
     deadline = data.get("deadline")
+    
     if not to or not deadline:
         return jsonify({"error": "Missing required fields"}), 400
 
     link_id = str(uuid.uuid4())[:8]  # Shorten to 8 chars
     insert_link(link_id, to, deadline)
+
+    # Logging the call with timestamp
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{now}] Called /api/generateLink - to: '{to}', deadline: '{deadline}', id: '{link_id}'")
+
     return jsonify({"id": link_id})
 
 @app.route("/api/disclosureData", methods=["GET"])
 def get_disclosure_data():
     id = request.args.get("id")
     data = get_link(id)
+    
     if not data:
+        print(f"[{datetime.now()}] ❌ /api/disclosureData called with id='{id}' - Not found")
         return jsonify({"error": "Not found"}), 404
+
+    print(f"[{datetime.now()}] ✅ /api/disclosureData called with id='{id}', to='{data['to']}', deadline='{data['deadline']}'")
     return jsonify(data)
 
 #ping
