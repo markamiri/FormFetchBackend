@@ -587,8 +587,7 @@ def get_disclosure_data():
     if not data:
         return jsonify({"error": "Not found"}), 404
     
-    print("/api/disclosureData Called ✔️")
-    print(f"Data: {data}")
+  
     return jsonify(data)
 
 #ping
