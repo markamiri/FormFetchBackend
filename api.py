@@ -458,7 +458,6 @@ def submit_disclosure_form():
     now = datetime.now(eastern)
     day_str = get_day_with_suffix(now.day)
     formatted_date = f"{day_str} day of {now.strftime('%B')}, {now.year} at {now.strftime('%I:%M %p').lower()} {now.strftime('%Z')}"
-    data_dict["SubmittedAt"] = formatted_date
 
     # File paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
