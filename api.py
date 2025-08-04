@@ -574,7 +574,11 @@ def send_email():
             from_email=from_email,
             to_emails=to_email,
             subject=f'Disclosure Form Submission from {name}',
-            plain_text_content=f'Please find attached the completed disclosure form and supporting documents from {name}',
+            plain_text_content=(
+                f"Please find attached the completed disclosure form and supporting documents from {name}.\n\n"
+                "–––––––––––––––––––––––––––––––––––––––––––––––\n"
+                "⚠️ Please do not reply to this email. If you have any issues or questions, contact yimminglu@gmail.com.\n"
+            )
             
         )
 
