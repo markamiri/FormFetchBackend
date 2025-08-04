@@ -16,6 +16,8 @@ import json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from pdfrw import PdfReader, PdfWriter, PageMerge
+import io
+
 app = Flask(__name__)
 init_db()
 
