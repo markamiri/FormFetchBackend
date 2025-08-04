@@ -476,7 +476,7 @@ def submit_disclosure_form():
     # Then draw only the text inputs on top using reportlab
     packet = io.BytesIO()
     can = canvas.Canvas(packet, pagesize=letter)
-    can.setFont("Times-Roman", 11)  # Regular 
+    can.setFont("Times-Roman", 9)  # Regular 
 
     # Coordinates based on your form analysis
     can.drawString(80, 711, to)               # "to"
