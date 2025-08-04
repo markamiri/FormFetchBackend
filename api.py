@@ -12,6 +12,7 @@ import os
 import uuid
 from database import init_db, insert_link, get_link
 from datetime import datetime, timedelta
+import fitz  # PyMuPDF
 import json
 app = Flask(__name__)
 init_db()
@@ -465,6 +466,12 @@ def submit_disclosure_form():
     input_pdf_path = os.path.join(base_dir, "DisclosureFormRebuild.pdf")
     output_pdf_path = os.path.join(base_dir, "newDisclosureForm.pdf")
     fillpdfs.write_fillable_pdf(input_pdf_path, output_pdf_path, data_dict)
+
+     # ✅ Flatten the filled PDF
+    doc = fitz.open(output_pdf_path)
+    for page in doc:
+        page.flatten_forms()
+    doc.save(output_pdf_path)  # Overwrite with flattened version
 
     return jsonify({"message": "Data received successfully!"}), 200
 
