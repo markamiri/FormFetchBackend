@@ -12,7 +12,6 @@ import os
 import uuid
 from database import init_db, insert_link, get_link
 from datetime import datetime, timedelta
-from pdfrw import PdfReader, PdfWriter, PageMerge
 import json
 app = Flask(__name__)
 init_db()
@@ -386,11 +385,7 @@ def get_filled_pdf():
     pdf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "new.pdf")
     return send_file(pdf_path, mimetype='application/pdf')
 
-def flatten_pdf(input_pdf_path, output_pdf_path):
-    template_pdf = PdfReader(input_pdf_path)
-    for page in template_pdf.pages:
-        PageMerge(page).render()
-    PdfWriter(output_pdf_path, trailer=template_pdf).write()
+
 
 
 
@@ -472,10 +467,11 @@ def submit_disclosure_form():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     input_pdf_path = os.path.join(base_dir, "DisclosureFormRebuild.pdf")
     output_pdf_path = os.path.join(base_dir, "newDisclosureForm.pdf")
-    fillpdfs.write_fillable_pdf(input_pdf_path, output_pdf_path, data_dict)
+    # ✅ Flatten the filled PDF
 
-     # ✅ Flatten the filled PDF
-    flatten_pdf(output_pdf_path, output_pdf_path)  # Overwrite with flattened version
+    fillpdfs.write_fillable_pdf(input_pdf_path, output_pdf_path, data_dict, flatten=True)
+
+    
 
 
     return jsonify({"message": "Data received successfully!"}), 200
