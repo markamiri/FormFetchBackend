@@ -13,6 +13,9 @@ import uuid
 from database import init_db, insert_link, get_link
 from datetime import datetime, timedelta
 import json
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from pdfrw import PdfReader, PdfWriter, PageMerge
 app = Flask(__name__)
 init_db()
 
@@ -391,7 +394,7 @@ def get_filled_pdf():
 
 @app.route('/api/submit-disclosure-form', methods=['POST'])
 def submit_disclosure_form():
-    data = request.json  # This is your `completeFormData` object
+    data = request.json
 
     name = data["name"]
     address = data["address"]
@@ -406,22 +409,20 @@ def submit_disclosure_form():
     data_dict = {}
 
     print("\n📬 Disclosure Form Submitted")
-    print("📝 Data:", json.dumps(data, indent=2))  # Pretty print the full payload
+    print("📝 Data:", json.dumps(data, indent=2))
 
-
+    # Handle checkboxes
     if is_owner:
         data_dict["B1Y"] = "Yes"
     else:
         data_dict["B1N"] = "Yes"
 
-    # Conditional logic for Arrears based on Ownership
     if is_owner:
         if is_in_arrears:
             data_dict["B2Y"] = "Yes"
         else:
             data_dict["B2N"] = "Yes"
     else:
-        # Not owner, leave arrears checkboxes empty
         data_dict["B2Y"] = ""
         data_dict["B2N"] = ""
 
@@ -450,34 +451,54 @@ def submit_disclosure_form():
     else:
         data_dict["F1N"] = "Yes"
 
-    # ✅ Generate date string like: 18th day of April, 2025 at 04:41 am EDT
+    # Generate timestamp
     eastern = pytz.timezone("US/Eastern")
     now = datetime.now(eastern)
-
     day_str = get_day_with_suffix(now.day)
     formatted_date = f"{day_str} day of {now.strftime('%B')}, {now.year} at {now.strftime('%I:%M %p').lower()} {now.strftime('%Z')}"
-
-    # ✅ Save it into data_dict
     data_dict["SubmittedAt"] = formatted_date
-    
+
     data_dict["A1Name"] = name
     data_dict["A1Address"] = address
     data_dict["to"] = to
 
+    # File paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
     input_pdf_path = os.path.join(base_dir, "DisclosureFormRebuild.pdf")
+    filled_pdf_path = os.path.join(base_dir, "filled.pdf")
     output_pdf_path = os.path.join(base_dir, "newDisclosureForm.pdf")
-    # ✅ Flatten the filled PDF
 
-    fillpdfs.write_fillable_pdf(input_pdf_path, output_pdf_path, data_dict, flatten=True)
+    # First, fill checkboxes using fillpdfs
+    fillpdfs.write_fillable_pdf(input_pdf_path, filled_pdf_path, data_dict, flatten=True)
 
-    
+    # Then draw only the text inputs on top using reportlab
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
 
+    # Coordinates based on your form analysis
+    can.drawString(80, 711, to)               # "to"
+    can.drawString(91, 663, name)             # "A1Name"
+    can.drawString(346, 663, address)         # "A1Address"
+    can.drawString(126, 61, formatted_date)   # "SubmittedAt"
+
+    can.save()
+    packet.seek(0)
+
+    # Merge visual layer with filled checkboxes PDF
+    overlay_pdf = PdfReader(packet)
+    base_pdf = PdfReader(filled_pdf_path)
+
+    for page in base_pdf.pages:
+        PageMerge(page).add(overlay_pdf.pages[0]).render()
+
+    PdfWriter(output_pdf_path, trailer=base_pdf).write()
 
     return jsonify({"message": "Data received successfully!"}), 200
 
 
+
 @app.route('/api/final-disclosure-pdf', methods=['GET'])
+
 def get_filled_disclosure_pdf():
     pdf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "newDisclosureForm.pdf")
     return send_file(pdf_path, mimetype='application/pdf')
