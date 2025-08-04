@@ -460,10 +460,6 @@ def submit_disclosure_form():
     formatted_date = f"{day_str} day of {now.strftime('%B')}, {now.year} at {now.strftime('%I:%M %p').lower()} {now.strftime('%Z')}"
     data_dict["SubmittedAt"] = formatted_date
 
-    data_dict["A1Name"] = name
-    data_dict["A1Address"] = address
-    data_dict["to"] = to
-
     # File paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
     input_pdf_path = os.path.join(base_dir, "DisclosureFormRebuild.pdf")
@@ -577,7 +573,7 @@ def send_email():
             plain_text_content=(
                 f"Please find attached the completed disclosure form and supporting documents from {name}.\n\n"
                 "–––––––––––––––––––––––––––––––––––––––––––––––\n"
-                "⚠️ Please do not reply to this email. If you have any issues or questions, contact yimminglu@gmail.com.\n"
+                "Please do not reply to this email. If you have any issues or questions, contact yimminglu@gmail.com.\n"
             )
             
         )
