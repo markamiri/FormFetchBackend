@@ -27,9 +27,34 @@ CORS(app)  # Allow cross-origin requests from frontend
 
 load_dotenv()  # Load environment variables from .env file
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+# March 26th change
+import requests
+
+
+#SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")
+MAILGUN_DOMAIN = os.getenv("MAILGUN_DOMAIN", "mg.formfetch.ca")
 from_email = os.getenv("EMAIL_FROM")
 to_email = os.getenv("EMAIL_TO")
+
+
+def send_simple_message(subject, body, attachments=[]):
+    files = []
+    for name, data, mimetype in attachments:
+        files.append(("attachment", (name, data, mimetype)))
+    return requests.post(
+        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+        auth=("api", MAILGUN_API_KEY),
+        data={
+            "from": from_email,
+            "to": to_email,
+            "subject": subject,
+            "text": body,
+        },
+        files=files if files else None,
+    )
 
 # Prints the form values 
 @app.route('/api/submit-form', methods=['POST'])
@@ -528,60 +553,32 @@ def send_email():
         base_dir = os.path.dirname(os.path.abspath(__file__))
         output_pdf_path = os.path.join(base_dir, "newDisclosureForm.pdf")
 
-        # Encode the filled disclosure PDF
-        with open(output_pdf_path, "rb") as f:
-            disclosure_encoded = base64.b64encode(f.read()).decode()
-
         attachments = []
         disclosure_filename = f"{name.replace(' ', '')}-DisclosureForm.pdf"
 
         # ✅ Add filled disclosure form
-        attachments.append(
-            Attachment(
-                FileContent(disclosure_encoded),
-                FileName(f"{name.replace(' ', '')}-DisclosureForm.pdf"),
-                FileType("application/pdf"),
-                Disposition("attachment"),
-            )
-        )
+        with open(output_pdf_path, "rb") as f:
+            attachments.append((disclosure_filename, f.read(), "application/pdf"))
 
         print(f"✔️ Attached: {disclosure_filename}")
-
 
         # ✅ Handle uploaded supporting files
         if "files" in request.files:
             for file in request.files.getlist("files"):
-                file_data = file.read()
-                encoded = base64.b64encode(file_data).decode()
-                attachments.append(
-                    Attachment(
-                        FileContent(encoded),
-                        FileName(file.filename),
-                        FileType(file.mimetype),
-                        Disposition("attachment")
-                    )
-                )
-                print(f"✔️ Attached: {file.filename}")  # 📎 Log each uploaded file
+                attachments.append((file.filename, file.read(), file.mimetype))
+                print(f"✔️ Attached: {file.filename}")
 
 
-        # Create email
-        message = Mail(
-            from_email=from_email,
-            to_emails=to_email,
+        # Send email via Mailgun
+        response = send_simple_message(
             subject=f'Disclosure Form Submission from {name}',
-            plain_text_content=(
+            body=(
                 f"Please find attached the completed disclosure form and supporting documents from {name}.\n\n"
                 "–––––––––––––––––––––––––––––––––––––––––––––––\n"
                 "Please do not reply to this email. If you have any issues or questions, contact yimminglu@gmail.com.\n"
-            )
-            
+            ),
+            attachments=attachments,
         )
-
-        # ✅ Attach all files
-        message.attachment = attachments
-
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        response = sg.send(message)
 
         print("✅ Email sent:", response.status_code)
         return jsonify({"message": "Email sent successfully!"}), 200
